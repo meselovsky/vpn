@@ -34,7 +34,7 @@ RUN pip install python-telegram-bot
 #RUN iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
 # ENTRYPOINT [ "./docker_entry.sh" ]
-ENTRYPOINT [ "./docker_entry.sh" ]
+ENTRYPOINT [ "bash", "./docker_entry.sh" ]
 
 
 
