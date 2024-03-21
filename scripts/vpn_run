@@ -1,0 +1,38 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <config>"
+  exit 1
+fi
+
+CONFIG_DIR=$1
+. $CONFIG_DIR/config
+
+pushd $CONFIG_DIR
+  cat "server.conf" | \
+    IP=$SERVER_LOCAL_IP \
+    PORT=$SERVER_LOCAL_PORT \
+    CA_CERT=$PKI_CA_CERT \
+    SERVER_CERT=$PKI_SERVER_CERT \
+    SERVER_KEY=$PKI_SERVER_KEY \
+    DH_CERT=$PKI_DH_CERT \
+    TA_KEY=$PKI_TA_KEY \
+    envsubst > ${VPN_SERVER_CONF}
+  
+  mkdir -p clients
+  mkdir -p /var/log/openvpn
+  touch /var/log/openvpn/status.log
+popd
+
+mkdir -p /dev/net
+if [ ! -c /dev/net/tun ]; then
+    mknod /dev/net/tun c 10 200
+fi
+
+pushd $VPN_WORKING_DIR
+  openvpn \
+    --status /var/log/openvpn/status.log \
+    --status-version 2 \
+    --suppress-timestamps \
+    --config $VPN_SERVER_CONF
+popd

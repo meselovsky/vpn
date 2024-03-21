@@ -1,0 +1,31 @@
+export PKI_COUNTRY="NL"
+export PKI_PROVINCE="Amsterdam"
+export PKI_CITY="Amsterdam"
+export PKI_ORG="Mesel Varkovsky"
+export PKI_EMAIL="meselvarkovsky"
+export PKI_OU="Development Department"
+
+export PKI_CA_CN="Mesel Varkovsky"
+export PKI_CA_CERT=ca.crt
+export PKI_CA_KEY=ca.key
+
+export PKI_SERVER_CN="OpenVPN Server"
+export PKI_SERVER_CERT=server.crt
+export PKI_SERVER_CSR=server.csr
+export PKI_SERVER_KEY=server.key
+# export PKI_DIR=/etc/openvpn/server/keys
+
+export PKI_DH_CERT=dh.pem
+export PKI_TA_KEY=ta.key
+
+export VPN_WORKING_DIR=/etc/openvpn/server
+export VPN_SERVER_CONF=$VPN_WORKING_DIR/server.conf
+
+export REMOTE_SRV_IP=192.168.0.7
+export REMOTE_SRV_PORT=8888
+
+# export SERVER_LOCAL_IP=
+# export SERVER_LOCAL_PORT=8888
+
+#export KEY_NAME="openvpn.mv"
+#KEY_ALTNAMES="name-openvpn-server"

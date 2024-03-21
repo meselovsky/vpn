@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ ! $# -eq 2 ]; then
+  echo "Usage: $0 <config_dir> <client_name>"
+  exit 1
+fi
+
+CONFIG_DIR=$1
+CLIENT_NAME=$2
+
+. $CONFIG_DIR/config
+
+pushd $CONFIG_DIR
+  pushd $PKI_DIR
+    openssl req -newkey rsa:2048 -nodes -keyout $CLIENT_NAME.key -out $CLIENT_NAME.csr -subj "/CN=${CLIENT_NAME}"
+    openssl x509 -req -in $CLIENT_NAME.csr -CA $PKI_CA_CERT -CAkey $PKI_CA_KEY -CAcreateserial -CAserial .serial -out $CLIENT_NAME.crt -days 3654
+
+    CA_CRT=$(cat $PKI_CA_CERT)
+    CLIENT_CRT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' $CLIENT_NAME.crt)
+    TLS_AUTH_KEY=$(cat $PKI_TA_KEY)
+    CLIENT_KEY=$(cat $CLIENT_NAME.key)
+    DH_PEM=$(cat $PKI_DH_CERT)
+  popd
+
+  mkdir -p clients
+  cat "client.ovpn" |
+    PKI_DIR=$PKI_DIR \
+    IP=$REMOTE_SRV_IP \
+    PORT=$REMOTE_SRV_PORT \
+    CLIENT_NAME=$CLIENT_NAME \
+    CA_CRT=$CA_CRT \
+    CLIENT_CRT=$CLIENT_CRT \
+    TLS_AUTH_KEY=$TLS_AUTH_KEY \
+    CLIENT_KEY=$CLIENT_KEY \
+    DH_PEM=$DH_PEM \
+    envsubst > clients/${CLIENT_NAME}.ovpn
+    
+  pushd $PKI_DIR
+    rm $CLIENT_NAME.csr $CLIENT_NAME.crt $CLIENT_NAME.key
+  popd
+popd
