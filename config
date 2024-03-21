@@ -21,7 +21,7 @@ export PKI_TA_KEY=ta.key
 export VPN_WORKING_DIR=/etc/openvpn/server
 export VPN_SERVER_CONF=$VPN_WORKING_DIR/server.conf
 
-export REMOTE_SRV_IP=192.168.0.7
+export REMOTE_SRV_IP=46.17.100.54
 export REMOTE_SRV_PORT=8888
 
 # export SERVER_LOCAL_IP=
