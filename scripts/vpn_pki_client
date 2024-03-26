@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ ! $# -eq 1 ]; then
+  echo "Usage: $0 <client_name>"
+  exit 1
+fi
+
+CLIENT_NAME=$1
+
+openssl req \
+  -newkey rsa:2048 -nodes -keyout $SERVER_PKI_PRIVATE_DIR/$CLIENT_NAME.key \
+  -out $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.csr \
+  -subj "/CN=${CLIENT_NAME}"
+
+openssl ca -config $SERVER_PKI_CONF -batch -create_serial \
+  -extensions user_cert -days 3000 -notext \
+	-in $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.csr \
+	-out $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.crt
+
+rm $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.csr

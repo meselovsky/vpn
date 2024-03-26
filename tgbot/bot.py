@@ -1,26 +1,25 @@
 import os
 import os.path
+import io
 import sys
 import re
 import random
 import string
 import asyncio
 
+import libvpn
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, InputMediaAudio
 from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters, CallbackContext, ContextTypes
 
 
-TOKEN = '7153515581:AAGLgLq0HUYuXkjz5tzAozQ4_CjjbqxSAyg'
-DEBUG = False
+TOKEN = os.getenv("TGBOT_TOKEN")
+DEBUG = os.getenv("TGBOT_DEBUG", False)
 
-ADMIN_USERNAME = "meselvarkovsky"
-CONFIG_DIR = sys.argv[1]
-CLIENTS_DIR = os.path.join(CONFIG_DIR, "clients")
+ADMIN_USERNAME = os.getenv("TGBOT_ADMIN_USERNAME")
+CERTS_DIR = os.getenv("SERVER_PKI_CERTS_DIR")
 
-START, START_ADMIN, START_ALLOWED, START_DENIED, INVITE, KICKOUT = range(6)
-
-
+START, START_ADMIN, START_ALLOWED, START_DENIED, INVITE, REVOKE = range(6)
 
 MARKUP_YES_NO = ReplyKeyboardMarkup([
     ["Да", "Нет"]
@@ -44,37 +43,22 @@ def random_alphanumeric_string(length):
         )
     )
 
-
-def is_client_exists(client_name: str):
-    only_dirs = [os.path.splitext(d)[0] for d in os.listdir(CLIENTS_DIR) if os.path.isfile(os.path.join(CLIENTS_DIR, d))]
-    if client_name in only_dirs:
-        return True
-    return False
-
-
 def is_admin(username: str):
     if username == ADMIN_USERNAME:
         return True
     return False
 
 
-async def generate_client(client_name: str):
-    process = await asyncio.create_subprocess_shell(f"bash scripts/vpn_gen_client {CONFIG_DIR} {client_name}", stderr=asyncio.subprocess.PIPE)
-    code = await process.wait()
-    if code != 0:
-        _, err = await process.communicate()
-        raise Exception(f"<stderr>\n{err.decode()}\ngen_client error code: {code}\n</stderr>\n")
-
-
 async def on_start(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
-    client_name = user.username if user.username and is_client_exists(user.username) else f"tguid_{user.id}"
+    user = update.message.from_user        
+    
+    client_name = f"tguname_{user.username}" if user.username and libvpn.is_client_exists(f"tguname_{user.username}") else f"tguid_{user.id}"
     context.user_data["client_name"] = client_name
 
     if user.username and is_admin(user.username):
         await update.message.reply_text('Привет, я помогу тебе настроить твой VPN сервер.', reply_markup=MARKUP_ADMIN_MENU)
         return START_ADMIN
-    elif is_client_exists(client_name):
+    elif libvpn.is_client_exists(client_name):
         await update.message.reply_text(
             "Привет! У тебя уже есть доступ. Скачивай OpenVPN клиент "
             "<a href=\"https://play.google.com/store/apps/details?id=net.openvpn.openvpn\">для Android</a> или "
@@ -97,23 +81,21 @@ async def on_admin(update: Update, context: CallbackContext) -> int:
         return INVITE
     elif text == "Выгнать":
         await update.message.reply_text('Отправь мне имя пользователя или контакт.')
-        return KICKOUT
+        return REVOKE
     elif text == "Моя конфигурация":
-        if not is_client_exists(context.user_data["client_name"]):
-            await generate_client(context.user_data["client_name"])
+        if not libvpn.is_client_exists(context.user_data["client_name"]):
+            await libvpn.create_client(context.user_data["client_name"])
         await update.message.reply_document(
-            open(os.path.join(f"{CLIENTS_DIR}", context.user_data["client_name"] + ".ovpn"), "rb"),
+            io.BytesIO(await libvpn.generate_client_config(context.user_data["client_name"])),
             filename="config.ovpn",
             reply_markup=MARKUP_ADMIN_MENU)
     elif text == "Генерировать":
         client_name = f"__tmp__{random_alphanumeric_string(16)}"
-        await generate_client(client_name)
+        await libvpn.create_client(client_name)
         await update.message.reply_document(
-            open(os.path.join(f"{CLIENTS_DIR}", client_name + ".ovpn"), "rb"),
+            io.BytesIO(await libvpn.generate_client_config(client_name)),
             filename="config.ovpn",
             reply_markup=MARKUP_ADMIN_MENU)
-        
-        os.remove(os.path.join(f"{CLIENTS_DIR}", client_name + ".ovpn"))
     
     return START_ADMIN
 
@@ -124,7 +106,7 @@ async def on_allowed(update: Update, context: CallbackContext) -> int:
 
     if text == "Скачать конфигурацию" and context.user_data["client_name"] :
         await update.message.reply_document(
-            open(os.path.join(f"{CLIENTS_DIR}", context.user_data["client_name"] + ".ovpn"), "rb"),
+            io.BytesIO(await libvpn.generate_client_config(context.user_data["client_name"])),
             filename="config.ovpn",
             reply_markup=MARKUP_ALLOWED)
 
@@ -132,7 +114,6 @@ async def on_allowed(update: Update, context: CallbackContext) -> int:
 
 
 async def on_invite(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
     username = update.message.text
     contact = update.message.contact
 
@@ -143,18 +124,33 @@ async def on_invite(update: Update, context: CallbackContext) -> int:
     if username and len(username) > 0 and username[0] == '@':
         username =  username[1:]
 
-    client_name = f"tguid_{contact.user_id}" if contact else username
+    client_name = f"tguid_{contact.user_id}" if contact else f"tguname_{username}"
 
-    await generate_client(client_name)
+    await libvpn.create_client(client_name)
     await update.message.reply_text('Сделал!', reply_markup=MARKUP_ADMIN_MENU)
 
     return START_ADMIN
 
 
-async def on_kickout(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
+async def on_revoke(update: Update, context: CallbackContext) -> int:
     username = update.message.text
+    contact = update.message.contact
 
+    if not username and not contact:
+        await update.message.reply_text('Отправь мне контакт или username!', reply_markup=MARKUP_ADMIN_MENU)
+        return INVITE
+
+    if username and len(username) > 0 and username[0] == '@':
+        username =  username[1:]
+    
+    if contact and libvpn.is_client_exists(f"tguid_{contact.user_id}"):
+        await libvpn.revoke_client(f"tguid_{contact.user_id}")
+    elif username and libvpn.is_client_exists(f"tguname_{username}"):
+        await libvpn.revoke_client(f"tguname_{username}")
+    else:
+        await update.message.reply_text('Клиет не найден либо изгнан!', reply_markup=MARKUP_ADMIN_MENU)
+        return START_ADMIN
+    
     await update.message.reply_text('Сделал!', reply_markup=MARKUP_ADMIN_MENU)
 
     return START_ADMIN
@@ -181,7 +177,7 @@ def main():
             START_ADMIN: [MessageHandler(filters.TEXT, on_admin), MessageHandler(filters.CONTACT, on_invite)],
             START_ALLOWED: [MessageHandler(filters.TEXT, on_allowed)],
             INVITE: [MessageHandler(filters.TEXT | filters.CONTACT, on_invite)],
-            KICKOUT: [MessageHandler(filters.TEXT, on_kickout)]
+            REVOKE: [MessageHandler(filters.TEXT | filters.CONTACT, on_revoke)]
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

@@ -1,20 +1,33 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-  echo "Usage: $0 <config>"
-  exit 1
-fi
+mkdir -p $SERVER_PKI_DIR
+mkdir -p $SERVER_PKI_CERTS_DIR
+mkdir -p $SERVER_PKI_INDEX_DIR
+mkdir -p $SERVER_PKI_PRIVATE_DIR
+touch $SERVER_PKI_INDEX
 
-CONFIG_DIR=$1
-. $CONFIG_DIR/config
+cat "openssl.conf" | envsubst > $SERVER_PKI_CONF
 
-mkdir -p $PKI_DIR
-pushd $PKI_DIR
-  openssl req -newkey rsa:2048 -nodes -keyout $PKI_CA_KEY -x509 -days 3654 -out $PKI_CA_CERT -subj "/CN=${PKI_CA_CN}"
-  openssl dhparam -out $PKI_DH_CERT 2048
+openssl dhparam -out $PKI_SERVER_DH_CERT 2048
 
-  openssl req -newkey rsa:2048 -nodes -keyout $PKI_SERVER_KEY -out $PKI_SERVER_CSR -subj "/CN=${PKI_SERVER_CN}"
-  openssl x509 -req -in $PKI_SERVER_CSR -CA $PKI_CA_CERT -CAkey $PKI_CA_KEY -out $PKI_SERVER_CERT -days 3654
+openssl req -config $SERVER_PKI_CONF \
+  -newkey rsa:2048 -nodes -keyout $PKI_CA_KEY \
+  -x509 -days 3000 -extensions root_ca -out $PKI_CA_CERT \
+  -subj "/CN=${PKI_CA_CN}"
 
-  openvpn --genkey --secret $PKI_TA_KEY
-popd
+echo  00 > $SERVER_PKI_CRLNUM
+openssl ca -config $SERVER_PKI_CONF -gencrl -out $SERVER_PKI_CRL
+
+openssl req -config $SERVER_PKI_CONF \
+  -newkey rsa:2048 -nodes -keyout $PKI_SERVER_KEY \
+  -out $PKI_SERVER_CSR \
+  -subj "/CN=${PKI_SERVER_CN}"
+
+openssl ca -config $SERVER_PKI_CONF -batch -create_serial \
+  -extensions server_cert -days 3000 -notext \
+	-in $PKI_SERVER_CSR \
+	-out $PKI_SERVER_CERT
+
+rm -f $PKI_SERVER_CSR
+
+openvpn --genkey --secret $PKI_SERVER_TA_KEY

@@ -1,31 +1,31 @@
-export PKI_COUNTRY="NL"
-export PKI_PROVINCE="Amsterdam"
-export PKI_CITY="Amsterdam"
-export PKI_ORG="Mesel Varkovsky"
-export PKI_EMAIL="meselvarkovsky"
-export PKI_OU="Development Department"
+export SERVER_DIR=/etc/openvpn/server
+export SERVER_CONF=$SERVER_DIR/server.conf
+export SERVER_PKI_DIR=$SERVER_DIR/pki
+export SERVER_PKI_INDEX_DIR=$SERVER_PKI_DIR/index
+export SERVER_PKI_PRIVATE_DIR=$SERVER_PKI_DIR/private
+export SERVER_PKI_CERTS_DIR=$SERVER_PKI_DIR/certs
+export SERVER_PKI_CONF=$SERVER_PKI_DIR/openssl.conf
+export SERVER_PKI_INDEX=$SERVER_PKI_INDEX_DIR/index.txt
+export SERVER_PKI_SERIAL=$SERVER_PKI_INDEX_DIR/serial.txt
+export SERVER_PKI_CRLNUM=$SERVER_PKI_DIR/crlnumber
+export SERVER_PKI_CRL=$SERVER_PKI_DIR/crl.pem
+export SERVER_MEDIA_DIR=/vpnsrv_media
+export SERVER_REMOTE_IP=46.17.100.54
+export SERVER_REMOTE_PORT=8888
+export SERVER_LOCAL_IP=
+export SERVER_LOCAL_PORT=8888
+
+export CONTAINER_EXTERNAL_PORT=$SERVER_REMOTE_PORT
+export CONTAINER_VOLUME_NAME=vpnsrv_media
+export CONTAINER_IMAGE_NAME=vpnsrv
 
 export PKI_CA_CN="Mesel Varkovsky"
-export PKI_CA_CERT=ca.crt
-export PKI_CA_KEY=ca.key
+export PKI_CA_CERT=$SERVER_PKI_DIR/ca.crt
+export PKI_CA_KEY=$SERVER_PKI_DIR/ca.key
 
 export PKI_SERVER_CN="OpenVPN Server"
-export PKI_SERVER_CERT=server.crt
-export PKI_SERVER_CSR=server.csr
-export PKI_SERVER_KEY=server.key
-# export PKI_DIR=/etc/openvpn/server/keys
-
-export PKI_DH_CERT=dh.pem
-export PKI_TA_KEY=ta.key
-
-export VPN_WORKING_DIR=/etc/openvpn/server
-export VPN_SERVER_CONF=$VPN_WORKING_DIR/server.conf
-
-export REMOTE_SRV_IP=46.17.100.54
-export REMOTE_SRV_PORT=8888
-
-# export SERVER_LOCAL_IP=
-# export SERVER_LOCAL_PORT=8888
-
-#export KEY_NAME="openvpn.mv"
-#KEY_ALTNAMES="name-openvpn-server"
+export PKI_SERVER_CERT=$SERVER_PKI_DIR/server.crt
+export PKI_SERVER_CSR=$SERVER_PKI_DIR/server.csr
+export PKI_SERVER_KEY=$SERVER_PKI_DIR/server.key
+export PKI_SERVER_DH_CERT=$SERVER_PKI_DIR/dh.pem
+export PKI_SERVER_TA_KEY=$SERVER_PKI_DIR/ta.key

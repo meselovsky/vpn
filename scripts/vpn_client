@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ ! $# -eq 1 ]; then
+  echo "Usage: $0 <client_name>"
+  exit 1
+fi
+
+CLIENT_NAME=$1
+
+CA_CRT=$(cat $PKI_CA_CERT)
+CLIENT_CRT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.crt)
+TLS_AUTH_KEY=$(cat $PKI_SERVER_TA_KEY)
+CLIENT_KEY=$(cat $SERVER_PKI_PRIVATE_DIR/$CLIENT_NAME.key)
+DH_PEM=$(cat $PKI_SERVER_DH_CERT)
+
+cat "client.ovpn" |
+  SERVER_PKI_DIR=$SERVER_PKI_DIR \
+  IP=$SERVER_REMOTE_IP \
+  PORT=$SERVER_REMOTE_PORT \
+  CLIENT_NAME=$CLIENT_NAME \
+  CA_CRT=$CA_CRT \
+  CLIENT_CRT=$CLIENT_CRT \
+  TLS_AUTH_KEY=$TLS_AUTH_KEY \
+  CLIENT_KEY=$CLIENT_KEY \
+  DH_PEM=$DH_PEM \
+  envsubst
+

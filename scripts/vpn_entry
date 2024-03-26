@@ -1,0 +1,55 @@
+#!/bin/bash
+
+. config
+
+SCRIPT_DIR=$(realpath $(dirname $0))
+
+while [ ! -z "$1" ]
+do
+    case "$1" in
+        --init-pki)
+            PKI_INIT=1
+            ;;
+        --init-config)
+            CONFIG_INIT=1
+            ;;
+        --tgbot)
+            TGBOT=1
+            ;;
+        *) break;;
+    esac
+    shift
+done
+
+rm -drf $SERVER_DIR
+ln -s $SERVER_MEDIA_DIR $SERVER_DIR
+
+if [ -n "$PKI_INIT" ]; then
+    bash $SCRIPT_DIR/vpn_pki_init
+fi
+
+if [ -n "$CONFIG_INIT" ]; then
+    cat "server.conf" | envsubst > $SERVER_CONF
+fi
+
+if [[ -z "$PKI_INIT" && -z "$CONFIG_INIT" ]]; then
+    if [ -n "$TGBOT" ]; then
+        python3 tgbot/bot.py
+    else
+        iptables -t nat -C POSTROUTING -s 172.16.0.0/16 -o eth0 -j MASQUERADE 2>/dev/null || {
+            iptables -t nat -A POSTROUTING -s 172.16.0.0/16 -o eth0 -j MASQUERADE
+        }
+
+        bash $SCRIPT_DIR/vpn_run
+    fi
+fi
+
+
+
+
+
+
+
+
+
+

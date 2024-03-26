@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ ! $# -eq 1 ]; then
+  echo "Usage: $0 <client_name>"
+  exit 1
+fi
+
+CLIENT_NAME=$1
+
+openssl ca -config $SERVER_PKI_CONF \
+    -revoke $SERVER_PKI_CERTS_DIR/$CLIENT_NAME.crt
+openssl ca -config $SERVER_PKI_CONF -gencrl -out $SERVER_PKI_CRL
