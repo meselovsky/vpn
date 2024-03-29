@@ -1,0 +1,9 @@
+servers:
+  hosts:
+    host1:
+      ansible_host: 
+      ansible_port: 22
+      ansible_connection: ssh
+      ansible_ssh_user: root
+      ansible_ssh_password: 
+      
