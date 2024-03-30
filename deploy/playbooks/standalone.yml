@@ -23,9 +23,19 @@
         - src: config
           dest: config
     
-    - name: Run PKI and Server config initializtion
+    - name: Pull containers from Docker Hub
       shell: |
         . ./config
-        docker compose run -v vpn_media:/vpn_media -it server --init-pki --init-config
+        docker compose pull
+      args:
+        chdir: /root/deploy/vpn
+    
+    - name: Run Docker Compose standalone configuration
+      shell: |
+        . ./config
+        docker compose stop
+        TGBOT_TOKEN="{{ lookup('env', 'TGBOT_TOKEN') }}" \
+        TGBOT_ADMIN_USERNAME="{{ lookup('env', 'TGBOT_ADMIN_USERNAME') }}" \ 
+          docker compose up -d
       args:
         chdir: /root/deploy/vpn

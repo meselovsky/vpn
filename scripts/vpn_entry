@@ -22,7 +22,7 @@ do
 done
 
 rm -drf $SERVER_DIR
-ln -s $SERVER_MEDIA_DIR $SERVER_DIR
+ln -s $CONTAINER_MEDIA_DIR $SERVER_DIR
 
 if [ -n "$PKI_INIT" ]; then
     bash $SCRIPT_DIR/vpn_pki_init

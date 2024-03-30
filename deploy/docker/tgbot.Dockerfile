@@ -3,7 +3,7 @@ FROM ubuntu:latest
 ARG APP_DIR=/root/app
 ARG CONFIG_DIR=.
 
-VOLUME [ "/vpnsrv_media" ]
+VOLUME [ "/vpn_media" ]
 
 RUN mkdir -p ${APP_DIR}
 WORKDIR ${APP_DIR}

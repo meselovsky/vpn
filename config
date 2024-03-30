@@ -15,15 +15,16 @@ export SERVER_LOG=$SERVER_LOG_DIR/openvpn.log
 export SERVER_LOG_STATUS=$SERVER_LOG_DIR/openvpn-status.log
 export SERVER_LOG_LAUNCH=$SERVER_LOG_DIR/launch.log
 
-export SERVER_MEDIA_DIR=/vpnsrv_media
 export SERVER_REMOTE_IP=46.17.100.54
 export SERVER_REMOTE_PORT=8888
 export SERVER_LOCAL_IP=
 export SERVER_LOCAL_PORT=8888
 
 export CONTAINER_EXTERNAL_PORT=$SERVER_REMOTE_PORT
-export CONTAINER_VOLUME_NAME=vpnsrv_media
-export CONTAINER_IMAGE_NAME=vpnsrv
+export CONTAINER_VOLUME_NAME=vpn_media
+export CONTAINER_MEDIA_DIR=/$CONTAINER_VOLUME_NAME
+export CONTAINER_SERVER_IMAGE_NAME=meselovsky/vpn
+export CONTAINER_TGBOT_IMAGE_NAME=meselovsky/vpn_tgbot
 
 export PKI_CA_CN="Mesel Varkovsky"
 export PKI_CA_CERT=$SERVER_PKI_DIR/ca.crt
